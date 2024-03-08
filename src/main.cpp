@@ -49,6 +49,7 @@ struct PointBox {
     RandomRealIntGen rrIntGen;
     RandomRealRangeGen rrRealGen;
     RandomRealRangeGen rrRealGen2;
+    Vector2 pseudo_mid1;
     PointBox() :
         width(0),
         height(0),
@@ -64,7 +65,8 @@ struct PointBox {
         color(BLUE),
         rrIntGen(12345,0,1),
         rrRealGen(12345,0.f,1.f),
-        rrRealGen2(12345,0.f,1.f)
+        rrRealGen2(12345,0.f,1.f),
+        pseudo_mid1{0.f,0.f}
     {}
     PointBox(
         float width,
@@ -88,7 +90,8 @@ struct PointBox {
         color(color),
         rrIntGen(12345,0,1),
         rrRealGen(12345,0.f,1.f),
-        rrRealGen2(12345,0.f,1.f)
+        rrRealGen2(12345,0.f,1.f),
+        pseudo_mid1{0.f,0.f}
     {}
     ~PointBox() {}
     void buildBox() {
@@ -147,7 +150,15 @@ struct PointBox {
             angle = std::acos(distance(c,b)/distance(a,b));
             return rad2deg(static_cast<float>(angle));
         };
-
+        auto midpoint = [](
+            const Vector2 &point1,
+            const Vector2 &point2
+        ) {
+            Vector2 mp {0.f,0.f};
+            mp.x = (point1.x+point2.x)/2.f;
+            mp.y = (point1.y+point2.y)/2.f;
+            return mp;
+        };
         float halfHeight = this->height / 2.0f;
         float halfWidth = this->width / 2.0f;
         // make box
@@ -170,8 +181,11 @@ struct PointBox {
         // start point
         projectPoint(mid_point,point5,orientation_angle-90,this->width);
 
-        float a1 = find_angle(point3,point5,mid_point);
-        float a2 = find_angle(point1,point5,mid_point);
+        this->pseudo_mid1 = midpoint(point2,point1);
+        // float a1 = find_angle(point3,point5,mid_point);
+        // float a2 = find_angle(point1,point5,mid_point);
+        float a1 = find_angle(point2,point5,this->pseudo_mid1);
+        float a2 = find_angle(point1,point5,this->pseudo_mid1);
         float offset = 0.f;
         std::cout << "a1=" << a1 << "\n";
         std::cout << "a2=" << a2 << "\n";
@@ -209,6 +223,7 @@ struct PointBox {
         DrawCircleV(this->point5,this->radius,WHITE);
         DrawCircleV(this->point6,this->radius,BLUE);
         DrawCircleV(this->mid_point,this->radius,RED);
+        DrawCircleV(this->pseudo_mid1,this->radius,ORANGE);
     }
 };
 
@@ -252,7 +267,7 @@ void run() {
     );
     SetTargetFPS(60);
     Timer timer(0.1f);
-    PointBox pb(100,10,90,Vector2{800/2,500/2},5,RED);
+    PointBox pb(100,50,90,Vector2{800/2,500/2},5,RED);
     pb.buildBox();
     while (!WindowShouldClose()) {
         // input
@@ -260,7 +275,7 @@ void run() {
         timer.updateTime(GetFrameTime());
         if (timer.ready()) {
             pb.orientation_angle = std::fmod<float>(
-                pb.orientation_angle+1.f,
+                pb.orientation_angle+0.f,
                 360.f
             );
             pb.buildBox();
